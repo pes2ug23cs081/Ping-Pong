@@ -15,33 +15,44 @@ class Ball:
         self.velocity_y = random.choice([-3, 3])
 
     def move(self):
+        """Moves the ball and returns True if it hits a top/bottom wall."""
         self.x += self.velocity_x
         self.y += self.velocity_y
 
         if self.y <= 0 or self.y + self.height >= self.screen_height:
             self.velocity_y *= -1
+            return True # Signal that a wall collision occurred
+        return False
 
     def check_collision(self, player, ai):
+        """Checks and handles paddle collisions. Returns True if a collision occurs."""
+        collided = False
         ball_rect = self.rect()
         player_rect = player.rect()
         ai_rect = ai.rect()
 
+        # Check for collision with the player paddle
         if ball_rect.colliderect(player_rect):
             if self.velocity_x < 0:
                 self.velocity_x *= -1
                 self.x = player_rect.right
-        
+                collided = True
+
+        # Check for collision with the AI paddle
         if ball_rect.colliderect(ai_rect):
             if self.velocity_x > 0:
                 self.velocity_x *= -1
                 self.x = ai_rect.left - self.width
+                collided = True
+        
+        return collided # Signal whether a paddle collision occurred
 
-                
     def reset(self):
         self.x = self.original_x
         self.y = self.original_y
-        self.velocity_x *= -1
+        self.velocity_x *= random.choice((1, -1))
         self.velocity_y = random.choice([-3, 3])
 
     def rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
+

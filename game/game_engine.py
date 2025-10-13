@@ -25,6 +25,19 @@ class GameEngine:
         self.game_over_font = pygame.font.SysFont("Arial", 60)
         self.menu_font = pygame.font.SysFont("Arial", 24)
 
+        #Load sound effects
+        try:
+            self.paddle_sound = pygame.mixer.Sound("Assets/BallHit.wav")
+            self.wall_sound = pygame.mixer.Sound("Assets/WallHit.wav")
+            self.score_sound = pygame.mixer.Sound("Assets/Victory.wav")
+        except pygame.error as e:
+            print(f"Error loading sound file: {e}")
+            # Create dummy sound objects if files are not found, so the game doesn't crash
+            self.paddle_sound = pygame.mixer.Sound(buffer=b'')
+            self.wall_sound = pygame.mixer.Sound(buffer=b'')
+            self.score_sound = pygame.mixer.Sound(buffer=b'')
+
+
         # New state management 
         self.state = 'PLAYING' # Can be 'PLAYING' or 'GAME_OVER'
         self.winning_score = 5
@@ -56,14 +69,19 @@ class GameEngine:
     def update(self):
         # Only update game objects if we are in the 'PLAYING' state
         if self.state == 'PLAYING':
-            self.ball.move()
-            self.ball.check_collision(self.player, self.ai)
+            if self.ball.move():
+                self.wall_sound.play()
+            
+            if self.ball.check_collision(self.player, self.ai):
+                self.paddle_sound.play()
 
             if self.ball.x <= 0:
                 self.ai_score += 1
+                self.score_sound.play()
                 self.ball.reset()
             elif self.ball.x >= self.width:
                 self.player_score += 1
+                self.score_sound.play()
                 self.ball.reset()
             
             self.check_for_winner()
