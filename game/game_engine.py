@@ -5,7 +5,6 @@ from .ball import Ball
 # Game Engine
 
 WHITE = (255, 255, 255)
-WINNING_SCORE = 5 #Add winning score
 
 class GameEngine:
     def __init__(self, width, height):
@@ -20,16 +19,34 @@ class GameEngine:
 
         self.player_score = 0
         self.ai_score = 0
-        self.font = pygame.font.SysFont("Arial", 30)
-        self.game_over_font = pygame.font.SysFont("Arial", 60) #new font for winner
+        
+        # Font setup 
+        self.score_font = pygame.font.SysFont("Arial", 30)
+        self.game_over_font = pygame.font.SysFont("Arial", 60)
+        self.menu_font = pygame.font.SysFont("Arial", 24)
 
-        #New State variables
-        self.game_over = False
+        # New state management 
+        self.state = 'PLAYING' # Can be 'PLAYING' or 'GAME_OVER'
+        self.winning_score = 5
         self.winner_text = ""
+        self.should_exit = False # Flag to signal the main loop to exit
 
-    def handle_input(self):
-        #Only handles input if game not over
-        if not self.game_over:
+    def handle_input(self, event):
+        """Handles single key press events, ideal for menus."""
+        if self.state == 'GAME_OVER':
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_3:
+                    self.reset_game(3)
+                elif event.key == pygame.K_5:
+                    self.reset_game(5)
+                elif event.key == pygame.K_7:
+                    self.reset_game(7)
+                elif event.key == pygame.K_ESCAPE:
+                    self.should_exit = True
+
+    def handle_continuous_input(self):
+        """Handles continuous key presses, ideal for movement."""
+        if self.state == 'PLAYING':
             keys = pygame.key.get_pressed()
             if keys[pygame.K_w]:
                 self.player.move(-10, self.height)
@@ -37,8 +54,8 @@ class GameEngine:
                 self.player.move(10, self.height)
 
     def update(self):
-        #updates game objects if game is not over
-        if not self.game_over:
+        # Only update game objects if we are in the 'PLAYING' state
+        if self.state == 'PLAYING':
             self.ball.move()
             self.ball.check_collision(self.player, self.ai)
 
@@ -51,30 +68,54 @@ class GameEngine:
             
             self.check_for_winner()
             self.ai.auto_track(self.ball, self.height)
-
+    
     def check_for_winner(self):
-        """Checks if a player has reached the winning score."""
-        if self.player_score >= WINNING_SCORE:
+        """Checks if a player has reached the winning score and changes state."""
+        if self.player_score >= self.winning_score:
             self.winner_text = "Player Wins!"
-            self.game_over = True
-        elif self.ai_score >= WINNING_SCORE:
+            self.state = 'GAME_OVER'
+        elif self.ai_score >= self.winning_score:
             self.winner_text = "AI Wins!"
-            self.game_over = True
+            self.state = 'GAME_OVER'
 
     def render(self, screen):
-        # Draw paddles and ball
+        # Always draw the basic game elements
         pygame.draw.rect(screen, WHITE, self.player.rect())
         pygame.draw.rect(screen, WHITE, self.ai.rect())
         pygame.draw.ellipse(screen, WHITE, self.ball.rect())
         pygame.draw.aaline(screen, WHITE, (self.width//2, 0), (self.width//2, self.height))
 
         # Draw score
-        player_text = self.font.render(str(self.player_score), True, WHITE)
-        ai_text = self.font.render(str(self.ai_score), True, WHITE)
+        player_text = self.score_font.render(str(self.player_score), True, WHITE)
+        ai_text = self.score_font.render(str(self.ai_score), True, WHITE)
         screen.blit(player_text, (self.width//4, 20))
         screen.blit(ai_text, (self.width * 3//4, 20))
 
-        if self.game_over:
+        # If the game is over, display the winner and replay menu
+        if self.state == 'GAME_OVER':
+            # Display winner text
             text_surface = self.game_over_font.render(self.winner_text, True, WHITE)
-            text_rect = text_surface.get_rect(center=(self.width/2, self.height/2))
+            text_rect = text_surface.get_rect(center=(self.width/2, self.height/3))
             screen.blit(text_surface, text_rect)
+            
+            # Display replay options
+            self.draw_text(screen, "Press (3) for Best of 3", (self.width/2, self.height/2), self.menu_font)
+            self.draw_text(screen, "Press (5) for Best of 5", (self.width/2, self.height/2 + 40), self.menu_font)
+            self.draw_text(screen, "Press (7) for Best of 7", (self.width/2, self.height/2 + 80), self.menu_font)
+            self.draw_text(screen, "Press (ESC) to Exit", (self.width/2, self.height/2 + 120), self.menu_font)
+
+    def draw_text(self, screen, text, pos, font):
+        """Helper function to draw centered text."""
+        text_surface = font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect(center=pos)
+        screen.blit(text_surface, text_rect)
+
+    def reset_game(self, winning_score):
+        """Resets the game state for a new match."""
+        self.winning_score = winning_score
+        self.player_score = 0
+        self.ai_score = 0
+        self.ball.reset()
+        self.winner_text = ""
+        self.state = 'PLAYING'
+

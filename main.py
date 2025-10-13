@@ -21,27 +21,28 @@ FPS = 60
 engine = GameEngine(WIDTH, HEIGHT)
 
 def main():
-    running = True
-    while running:
+    # The main loop now runs until the engine signals it to stop
+    while not engine.should_exit:
         SCREEN.fill(BLACK)
+        
+        # --- Event handling is now passed to the engine ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                engine.should_exit = True
+            # The engine will handle key presses based on game state
+            engine.handle_input(event)
+        
+        # Handle continuous movement separately
+        engine.handle_continuous_input()
 
-        engine.handle_input()
         engine.update()
         engine.render(SCREEN)
 
-        # If the game is over, show the final screen for a moment
-        if engine.game_over:
-            pygame.display.flip()  
-            pygame.time.wait(3000) # Wait for 3 seconds 
-            running = False        # Exit the main loop
-        else:
-            pygame.display.flip()  # Otherwise, just update the display normally
+        pygame.display.flip()
         clock.tick(FPS)
 
     pygame.quit()
 
 if __name__ == "__main__":
     main()
+
