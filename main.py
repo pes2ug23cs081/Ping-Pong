@@ -32,7 +32,13 @@ def main():
         engine.update()
         engine.render(SCREEN)
 
-        pygame.display.flip()
+        # If the game is over, show the final screen for a moment
+        if engine.game_over:
+            pygame.display.flip()  
+            pygame.time.wait(3000) # Wait for 3 seconds 
+            running = False        # Exit the main loop
+        else:
+            pygame.display.flip()  # Otherwise, just update the display normally
         clock.tick(FPS)
 
     pygame.quit()
